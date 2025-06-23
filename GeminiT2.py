@@ -42,12 +42,32 @@ def gemini_chat():
     try:
         data = request.get_json()
         user_input = data.get('input', '')
-        response = generate_gemini_response(user_input)
+        pdf_id = data.get('pdf_id', None)
+
+        if not user_input:
+            return jsonify({'error': '请输入问题'}), 400
+
+        context = ""
+        if pdf_id is not None:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT solution_text FROM exercises WHERE id = %s", (pdf_id,))
+            row = cursor.fetchone()
+            cursor.close()
+            conn.close()
+
+            if row and row['solution_text']:
+                context = f"以下是这道题的参考解答内容：\n{row['solution_text']}\n\n用户问题是：{user_input}"
+            else:
+                context = f"用户问题是：{user_input}\n（注意：此题无标准答案，尽量基于提问猜测其背景）"
+        else:
+            context = user_input
+
+        response = generate_gemini_response(context)
         return jsonify({'response': response})
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 # MySQL 数据库连接
 def get_db_connection():

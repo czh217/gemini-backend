@@ -91,14 +91,18 @@ def get_pdf_list():
     try:
         connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
-        cursor.execute('SELECT id, title, filename FROM pdfs')
+
+        # 修改点：加入 problem_link 字段
+        cursor.execute('SELECT id, title, filename, problem_link FROM pdfs')
         pdfs = cursor.fetchall()
+
         cursor.close()
         connection.close()
 
         return jsonify({'pdfs': pdfs})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))

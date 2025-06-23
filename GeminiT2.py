@@ -63,27 +63,6 @@ def get_db_connection():
     except Error as e:
         raise Exception(f"数据库连接失败: {e}")
 
-# 获取 PDF 文件
-@app.route('/api/pdf/<int:pdf_id>', methods=['GET'])
-def get_pdf(pdf_id):
-    try:
-        connection = get_db_connection()
-        cursor = connection.cursor(dictionary=True)
-        cursor.execute('SELECT title, filename FROM pdfs WHERE id = %s', (pdf_id,))
-        pdf = cursor.fetchone()
-        cursor.close()
-        connection.close()
-
-        if not pdf:
-            return jsonify({'error': 'PDF 未找到'}), 404
-
-        file_path = os.path.join('uploads', secure_filename(pdf['filename']))
-        if not os.path.exists(file_path):
-            return jsonify({'error': 'PDF 文件不存在'}), 404
-
-        return send_file(file_path, mimetype='application/pdf')
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 # 获取 PDF 列表
 @app.route('/api/pdfs/list', methods=['GET'])
@@ -93,7 +72,7 @@ def get_pdf_list():
         cursor = connection.cursor(dictionary=True)
 
         # 修改点：加入 problem_link 字段
-        cursor.execute('SELECT id, title, filename, problem_link FROM pdfs')
+        cursor.execute('SELECT id, title, problem_file AS filename, problem_link FROM exercises')
         pdfs = cursor.fetchall()
 
         cursor.close()

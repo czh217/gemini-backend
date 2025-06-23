@@ -53,10 +53,10 @@ def gemini_chat():
 def get_db_connection():
     try:
         connection = mysql.connector.connect(
-            host='mysql.railway.internal',
+            host='hopper.proxy.rlwy.net',
             port=3306,
             user='root',
-            password='VPIxnNJuGXXniWozutdBnQdRAAwVZnPN',  # 替换为你的 MySQL 密码
+            password='mkZkHWFzNbCYOdGEBBZpOwbqRQfQnWhx',  # 替换为你的 MySQL 密码
             database='railway'
         )
         return connection

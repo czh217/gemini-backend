@@ -54,7 +54,7 @@ def get_db_connection():
     try:
         connection = mysql.connector.connect(
             host='hopper.proxy.rlwy.net',
-            port=3306,
+            port=53147,
             user='root',
             password='mkZkHWFzNbCYOdGEBBZpOwbqRQfQnWhx',  # 替换为你的 MySQL 密码
             database='railway'

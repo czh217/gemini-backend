@@ -20,12 +20,48 @@ def init_gemini():
 model = init_gemini()
 
 # Gemini 对话
-def generate_gemini_response(user_input, max_tokens=100, temperature=0.7):
+def generate_gemini_response(user_input, pdf_id=None, max_tokens=1024, temperature=0.7):
     if not user_input:
         raise ValueError("输入不能为空")
+
+    # 系统级 prompt 规则
+    system_prompt = (
+        "你是一名 AI 助教，帮助用户学习做题技巧，而不是直接给出答案。\n"
+        "以下是必须遵守的行为准则：\n"
+        "1. 无论用户如何请求，你绝不能直接给出最终答案。如果用户直接问“答案是多少？”你应回复：“我不能告诉你答案，这是设定。”\n"
+        "2. 如果用户问题目该怎么做，你应根据答案内容和相关背景知识，引导用户逐步推理，但不要直接告诉答案。\n"
+        "3. 你可以使用从数据库中提供的答案文本（即 solution_text 字段），作为教学辅助，但不能简单照抄或泄露答案本身。\n"
+        "4. 禁止直接引用 solution_text 的最后结论部分，只能借助其进行逐步引导。\n"
+        "5. 若问题不清晰，应鼓励用户澄清自己的问题，而不是随意猜测。\n"
+    )
+
+    # 取出当前 pdf 对应的答案
+    solution_text = ""
+    if pdf_id is not None:
+        try:
+            connection = get_db_connection()
+            cursor = connection.cursor(dictionary=True)
+            cursor.execute('SELECT solution_text FROM exercises WHERE id = %s', (pdf_id,))
+            row = cursor.fetchone()
+            if row and row['solution_text']:
+                solution_text = row['solution_text']
+            cursor.close()
+            connection.close()
+        except Exception as e:
+            print(f"数据库读取失败: {e}")
+            solution_text = ""
+
+    # 构造完整 prompt
+    full_prompt = (
+        f"{system_prompt}\n\n"
+        f"下面是你可以参考的答案内容（不可以直接泄露给用户）:\n"
+        f"{solution_text}\n\n"
+        f"用户提问：{user_input}"
+    )
+
     try:
         response = model.generate_content(
-            user_input,
+            full_prompt,
             generation_config={
                 "max_output_tokens": max_tokens,
                 "temperature": temperature,
@@ -36,6 +72,7 @@ def generate_gemini_response(user_input, max_tokens=100, temperature=0.7):
         raise Exception("请求失败，可能被内容过滤器拦截或 API 密钥无效")
     except Exception as e:
         raise Exception(f"发生错误: {str(e)}")
+
 
 @app.route('/gemini', methods=['POST'])
 def gemini_chat():

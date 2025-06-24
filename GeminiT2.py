@@ -84,26 +84,12 @@ def gemini_chat():
         if not user_input:
             return jsonify({'error': '请输入问题'}), 400
 
-        context = ""
-        if pdf_id is not None:
-            conn = get_db_connection()
-            cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT solution_text FROM exercises WHERE id = %s", (pdf_id,))
-            row = cursor.fetchone()
-            cursor.close()
-            conn.close()
-
-            if row and row['solution_text']:
-                context = f"以下是这道题的参考解答内容：\n{row['solution_text']}\n\n用户问题是：{user_input}"
-            else:
-                context = f"用户问题是：{user_input}\n（注意：此题无标准答案，尽量基于提问猜测其背景）"
-        else:
-            context = user_input
-
-        response = generate_gemini_response(context)
+        # 直接传递 user_input 和 pdf_id 给生成函数
+        response = generate_gemini_response(user_input, pdf_id=pdf_id)
         return jsonify({'response': response})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 
 # MySQL 数据库连接
